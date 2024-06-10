@@ -328,9 +328,9 @@ def train():
 
 def test():
     # restore latest checkpoint
-    # checkpoint.restore(manager.latest_checkpoint)
+    checkpoint.restore(manager.latest_checkpoint)
 
-    layoutnet.load_weights('./checkpoints/ckpt-300')
+    # layoutnet.load_weights('./checkpoints/ckpt-300')
 
     # run sample function to generatre sample using checkpoint
 

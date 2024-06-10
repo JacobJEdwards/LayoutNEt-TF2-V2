@@ -11,7 +11,7 @@ beta1 = 0.5
 # configuration for the supervisor
 logdir = "./log"
 sampledir = "./example"
-max_steps = 30000
+max_steps = 100
 sample_every_n_steps = 100
 summary_every_n_steps = 1
 save_model_secs = 120

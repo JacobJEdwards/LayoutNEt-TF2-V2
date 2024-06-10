@@ -1,24 +1,27 @@
+from typing import Iterator
+
 import tensorflow as tf
+import numpy as np
 import config
+from PIL import Image
 
 
 class Dataset:
-    def __init__(self):
+    def __init__(self) -> None:
         # prepare dataset
-        dataset = tf.data.TFRecordDataset(config.filenamequeue)
-        dataset = dataset.map(self._decode_tfrecords)
+        _dataset = tf.data.TFRecordDataset(config.filenamequeue)
+        _dataset = _dataset.map(self._decode_tfrecords)
 
-        # TODO: change the buffer_size
-        dataset = dataset.shuffle(buffer_size=32,
-                                  reshuffle_each_iteration=True)
-        dataset = dataset.repeat()
-        dataset = dataset.batch(batch_size=config.batch_size)
-        dataset = dataset.as_numpy_iterator()
+        _dataset = _dataset.shuffle(buffer_size=1000,
+                                    reshuffle_each_iteration=True)
+        _dataset = _dataset.repeat()
+        _dataset = _dataset.batch(batch_size=config.batch_size)
+        _dataset = _dataset.as_numpy_iterator()
 
-        self.dataset = dataset
+        self.dataset: Iterator[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = _dataset
 
-    # decode function for dataset
-    def _decode_tfrecords(self, example_string):
+    @staticmethod
+    def _decode_tfrecords(example_string: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         features = tf.io.parse_single_example(
             example_string,
             features={
@@ -30,34 +33,31 @@ class Dataset:
                 "img_raw": tf.io.FixedLenFeature([], tf.string)
             })
 
-        image = tf.io.decode_raw(features['img_raw'], tf.uint8)
-        image = tf.reshape(image, [60, 45, 3])
-        image = tf.cast(image, tf.float32)
+        _image = tf.io.decode_raw(features['img_raw'], tf.uint8)
+        _image = tf.reshape(_image, [60, 45, 3])
+        _image = tf.cast(_image, tf.float32)
 
-        resized_image = tf.image.resize_with_crop_or_pad(image, 64, 64)
-        resized_image = resized_image / 127.5 - 1.
+        _resized_image = tf.image.resize_with_crop_or_pad(_image, 64, 64)
+        _resized_image = _resized_image / 127.5 - 1.
 
-        label = tf.cast(features['label'], tf.int32)
+        _label = tf.cast(features['label'], tf.int32)
 
-        textRatio = tf.cast(features['textRatio'], tf.int32)
-        imgRatio = tf.cast(features['imgRatio'], tf.int32)
+        _text_ratio = tf.cast(features['textRatio'], tf.int32)
+        _img_ratio = tf.cast(features['imgRatio'], tf.int32)
 
-        visualfea = tf.io.decode_raw(features['visualfea'], tf.float32)
-        visualfea = tf.reshape(visualfea, [14, 14, 512])
+        _visual_fea = tf.io.decode_raw(features['visualfea'], tf.float32)
+        _visual_fea = tf.reshape(_visual_fea, [14, 14, 512])
 
-        textualfea = tf.io.decode_raw(features['textualfea'], tf.float32)
-        textualfea = tf.reshape(textualfea, [300])
+        _textual_fea = tf.io.decode_raw(features['textualfea'], tf.float32)
+        _textual_fea = tf.reshape(_textual_fea, [300])
 
-        return resized_image, label, textRatio, imgRatio, visualfea, textualfea
+        return _resized_image, _label, _text_ratio, _img_ratio, _visual_fea, _textual_fea
 
     def next(self):
-        return self.dataset.next()
+        return next(self.dataset)
 
 
 if __name__ == '__main__':
-    import numpy as np
-    from PIL import Image
-
     dataset = Dataset()
     resized_image, label, textRatio, imgRatio, visualfea, textualfea = dataset.next()
 
