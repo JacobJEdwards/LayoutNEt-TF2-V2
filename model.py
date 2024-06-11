@@ -1,8 +1,8 @@
 import tensorflow as tf
-from keras.src.layers import Conv2D, Conv2DTranspose, Reshape
 from tensorflow import keras
 from tensorflow.keras.layers import *
 import numpy as np
+from keras.src.layers import *
 
 
 # Attribute encoder in the paper
@@ -29,7 +29,7 @@ class EmbeddingSemvec(keras.Model):
                         kernel_initializer=initializer,
                         use_bias=True)
 
-    def call(self, inputs, is_training=None):
+    def __call__(self, inputs, is_training=None):
         # according to the paper
         # all attributes will be duplicated 10 times 
         # to increase significance
@@ -65,7 +65,7 @@ class EmbeddingImg(keras.Model):
                              kernel_initializer=initializer,
                              use_bias=True)
 
-    def call(self, inputs, is_training=None):
+    def __call__(self, inputs, is_training=None):
         x = tf.reduce_mean(inputs, [1, 2])
         x = self.img_fc1(x)
         x = self.img_fc2(x)
@@ -93,7 +93,7 @@ class EmbeddingTxt(keras.Model):
                              kernel_initializer=initializer,
                              use_bias=True)
 
-    def call(self, inputs, is_training=None):
+    def __call__(self, inputs, is_training=None):
         x = self.txt_fc1(inputs)
         x = self.txt_fc2(x)
         x = self.txt_fc3(x)
@@ -137,19 +137,19 @@ class Gen(keras.Model):
                                 activation=activation,
                                 kernel_initializer=initializer,
                                 use_bias=True)
-        self.reshape = Reshape((4, 4, 512))
+        self.reshape = keras.layers.Reshape((4, 4, 512))
         self.bn_0 = BatchNormalization(epsilon=1e-5)
 
-        self.conv_tp1 = Conv2DTranspose(256,
-                                        kernel_size=kernel_size,
-                                        strides=strides,
-                                        padding=padding,
-                                        activation=activation,
-                                        kernel_initializer=initializer,
-                                        use_bias=False)
+        self.conv_tp1 = keras.layers.Conv2DTranspose(256,
+                                                     kernel_size=kernel_size,
+                                                     strides=strides,
+                                                     padding=padding,
+                                                     activation=activation,
+                                                     kernel_initializer=initializer,
+                                                     use_bias=False)
         self.bn_1 = BatchNormalization(epsilon=1e-5)
 
-        self.conv_tp2 = Conv2DTranspose(128,
+        self.conv_tp2 = keras.layers.Conv2DTranspose(128,
                                         kernel_size=kernel_size,
                                         strides=strides,
                                         padding=padding,
@@ -158,7 +158,7 @@ class Gen(keras.Model):
                                         use_bias=False)
         self.bn_2 = BatchNormalization(epsilon=1e-5)
 
-        self.conv_tp3 = Conv2DTranspose(64,
+        self.conv_tp3 = keras.layers.Conv2DTranspose(64,
                                         kernel_size=kernel_size,
                                         strides=strides,
                                         padding=padding,
@@ -167,7 +167,7 @@ class Gen(keras.Model):
                                         use_bias=False)
         self.bn_3 = BatchNormalization(epsilon=1e-5)
 
-        self.conv_tp4 = Conv2DTranspose(3,
+        self.conv_tp4 = keras.layers.Conv2DTranspose(3,
                                         kernel_size=kernel_size,
                                         strides=strides,
                                         padding=padding,
@@ -208,7 +208,7 @@ class Disc(keras.Model):
         strides = (2, 2)
         padding = 'same'
 
-        self.conv_0 = Conv2D(64,
+        self.conv_0 = keras.layers.Conv2D(64,
                              kernel_size=kernel_size,
                              strides=strides,
                              padding=padding,
@@ -216,7 +216,7 @@ class Disc(keras.Model):
                              kernel_initializer=initializer,
                              use_bias=False)
 
-        self.conv_1 = Conv2D(128,
+        self.conv_1 = keras.layers.Conv2D(128,
                              kernel_size=kernel_size,
                              strides=strides,
                              padding=padding,
@@ -414,7 +414,7 @@ class LayoutNet(keras.Model):
 
         return y_label
 
-    def call(self, x, y, tr, ir, img, tex, z, is_training=True):
+    def __call__(self, x, y, tr, ir, img, tex, z, is_training=True, encoding_type='all'):
         """[summary]
 
         Args:
@@ -447,28 +447,28 @@ class LayoutNet(keras.Model):
 
         x_labeltmp = tf.concat([category, textratio, imgratio], 1)
 
-        var_label = self.embeddingSemvec(x_labeltmp, is_training = is_training)
-        img_fea = self.embeddingImg(img, is_training = is_training)
-        tex_fea = self.embeddingTxt(tex, is_training = is_training)
+        var_label = self.embeddingSemvec(x_labeltmp, is_training=is_training) if encoding_type in ['all', 'semantic'] else tf.zeros_like(self.embeddingSemvec(x_labeltmp, is_training=is_training))
+        img_fea = self.embeddingImg(img, is_training=is_training) if encoding_type in ['all', 'image'] else tf.zeros_like(self.embeddingImg(img, is_training=is_training))
+        tex_fea = self.embeddingTxt(tex, is_training=is_training) if encoding_type in ['all', 'text'] else tf.zeros_like(self.embeddingTxt(tex, is_training=is_training))
 
         y_label = self.embeddingFusion(var_label, img_fea, tex_fea,
                                        is_training=is_training)
-        
+
         # to apply y to encoder E and discriminator D
         # first duplicate y along spatial dimensions
         # to form a 60 × 45 × 128 feature map
-        
+
         # NOTICE: 
         # 60 * 45 is the size from paper
         # but resizing is used when generating data
         # so the size here is 64 * 64
         ydis_label = tf.reshape(
             y_label, shape=(-1, 1, 1, config.latent_dim)) * tf.ones(
-                [config.batch_size, 64, 64, config.latent_dim])
+            [config.batch_size, 64, 64, config.latent_dim])
 
         encoderdis_label = tf.reshape(
             y_label, shape=(-1, 1, 1, config.latent_dim)) * tf.ones(
-                [config.batch_size, 4, 4, config.latent_dim])
+            [config.batch_size, 4, 4, config.latent_dim])
 
         # generate a random noise
         randomz = tf.random.normal([config.batch_size, config.z_dim])

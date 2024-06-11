@@ -15,6 +15,7 @@ dataset = Dataset()
 # create model
 layoutnet = LayoutNet(config)
 
+
 # define loss functions
 
 
@@ -95,10 +96,11 @@ checkpoint = tf.train.Checkpoint(
     embeddingImg=layoutnet.embeddingImg,
     embeddingTxt=layoutnet.embeddingTxt,
     embeddingFusion=layoutnet.embeddingFusion)
-    
+
 manager = tf.train.CheckpointManager(checkpoint,
                                      config.checkpoint_dir,
                                      max_to_keep=None)
+
 
 # define the training loop
 
@@ -139,11 +141,11 @@ def train_step(z,
     if is_training:
         # get the trainable variables
         # BP algorithm will modify these variables
-        discriminator_variables = layoutnet.discriminator.trainable_variables+ \
-                            layoutnet.embeddingImg.trainable_variables + \
-                            layoutnet.embeddingTxt.trainable_variables + \
-                            layoutnet.embeddingSemvec.trainable_variables + \
-                            layoutnet.embeddingFusion.trainable_variables
+        discriminator_variables = layoutnet.discriminator.trainable_variables + \
+                                  layoutnet.embeddingImg.trainable_variables + \
+                                  layoutnet.embeddingTxt.trainable_variables + \
+                                  layoutnet.embeddingSemvec.trainable_variables + \
+                                  layoutnet.embeddingFusion.trainable_variables
         generator_variables = layoutnet.generator.trainable_variables
         # when training encoder, we not only modify encoder's weights
         # but also modify weights of embedding layers
@@ -166,7 +168,7 @@ def train_step(z,
         # 2. train generator
         if generator:
             gradients_of_generator = tape.gradient(gen_loss,
-                                                       generator_variables)
+                                                   generator_variables)
             generator_optimizer.apply_gradients(
                 zip(gradients_of_generator, generator_variables))
 
@@ -255,7 +257,7 @@ def sample(step, sample_dir='./sample'):
                                            is_training=False)
     test_dis_label = tf.reshape(test_label,
                                 shape=[-1, 1, 1, config.latent_dim]) * tf.ones(
-                                    [128, 4, 4, config.latent_dim])
+        [128, 4, 4, config.latent_dim])
     test_mean, test_log_sigma_sq = layoutnet.encoder(test_layout,
                                                      is_training=False,
                                                      y=test_dis_label)
