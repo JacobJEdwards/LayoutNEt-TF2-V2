@@ -414,7 +414,7 @@ class LayoutNet(keras.Model):
 
         return y_label
 
-    def __call__(self, x, y, tr, ir, img, tex, z, is_training=True, encoding_type='all'):
+    def call(self, x, y, tr, ir, img, tex, z, is_training=True, encoding_type='all'):
         """[summary]
 
         Args:

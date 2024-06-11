@@ -124,7 +124,9 @@ def train_step(z,
             visualfea,
             textualfea,
             z,
-            is_training=is_training)
+            is_training=is_training,
+            encoding_type = config.encoding_type
+        )
 
         # calculate loss
         disc_loss = discriminator_loss(D_real, D_fake)
