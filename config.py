@@ -20,3 +20,5 @@ checkpoint_dir = "./checkpoints"
 filenamequeue = "./dataset/layout_1205.tfrecords"
 min_after_dequeue = 5000
 num_threads = 4
+
+encoding_type = "all"
